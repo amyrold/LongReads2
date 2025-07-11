@@ -1,7 +1,7 @@
 # LongReads2
 
 ## Project Origin
-This project is a complete architectural redesign of the original [LongReads](https://github.com/amyrold/LongReads) bioinformatics pipeline, originally developed in collaboration with Aaron Myrold, Niru Shanbhag, Asad Shahzad, and Japani Doan. The original collaborative version remains available for reference. LongReads2 represents a modern reimplementation using current best practices in bioinformatics workflow management.
+This project is a complete architectural redesign of the original [LongReads](https://github.com/amyrold/LongReads) bioinformatics pipeline, originally developed in collaboration with Niru Shanbhag, Asad Shahzad, and Japani Doan. The original collaborative version remains available for reference. LongReads2 represents a seperate implementation using current best practices in bioinformatics workflow management.
 
 ## Description
 LongReads2 is a Nextflow-based bioinformatics pipeline that compares the variation of the 16S rRNA region within and between strains of a specified bacterial species. Based on a user-specified genome, LongReads2 downloads metadata and filters to genomes sequenced using Long Read technology (PacBio and Oxford Nanopore). It then analyzes and visualizes the intra-genomic and inter-genomic variation of the different 16S regions seen in each genome.
