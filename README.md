@@ -1,148 +1,296 @@
-# LongReads
+# LongReads2
+
+## Project Origin
+This project is a complete architectural redesign of the original [LongReads](https://github.com/amyrold/LongReads) bioinformatics pipeline, originally developed in collaboration with Aaron Myrold, Niru Shanbhag, Asad Shahzad, and Japani Doan. The original collaborative version remains available for reference. LongReads2 represents a modern reimplementation using current best practices in bioinformatics workflow management.
 
 ## Description
-LongReads is a bioinformatics application that will compare the variation of the 16S region within and between strains of a specified bacterial species. Based on a user-specified genome, LongReads will download metadata and filter to genomes that were sequenced using Long Read technology (i.e. PacBio and Oxford Nanopore). It then analyzes and visualizes the intra-genomic and inter-genomic variation of the different 16S regions seen in each genome. 
+LongReads2 is a Nextflow-based bioinformatics pipeline that compares the variation of the 16S rRNA region within and between strains of a specified bacterial species. Based on a user-specified genome, LongReads2 downloads metadata and filters to genomes sequenced using Long Read technology (PacBio and Oxford Nanopore). It then analyzes and visualizes the intra-genomic and inter-genomic variation of the different 16S regions seen in each genome.
 
-# Installation Methods
+## Major Architectural Improvements in LongReads2
+- **Nextflow Pipeline Management**: Complete migration from Python scripts to Nextflow for robust workflow orchestration
+- **Containerized Modules**: Each process runs in isolated Docker/Singularity containers for reproducibility
+- **Simplified Installation**: Single installation method eliminates complexity of multiple deployment options
+- **Modular Design**: Workflow broken into discrete, reusable processes
+- **Enhanced Portability**: Runs consistently across different computing environments (local, HPC, cloud)
+- **Improved Error Handling**: Automatic retry logic and comprehensive logging
+- **Resource Management**: Dynamic resource allocation based on dataset size
 
-There are three directories currently provided. The first, LR_base is the version you should use if you'd like to handle installation of packages on your own. There may be some troublshooting involved due to different versions of the NCBI datasets and dataformat tools. The second, LR_docker, is a self-contained image of all tools and dependencies involved in our main.py script. It currently does not support the R script and there are directions below on how to navigate that. Finally, LR_wheeler is built specifically to work on the compbio server with packages installed as they are. There is also "test" data downloaded to decrease time in the data download portion of the script. Directions will be below as well. 
+## Prerequisites
 
-## LR_wheeler process
-Here, we have included the metadata and wgs.fasta files to decrease time spent downloading data. These are for 10 genomes. The rest of the script should run as intended. There are two main steps for testing this pipeline. First, run
-```
-python3 main.py -s 'Escherichia coli' -n 10
-```
-and once that finishes, run 
-```
-Rscript LR_stats.R
-```
+- **Nextflow** (≥22.10.0): [Installation Guide](https://www.nextflow.io/docs/latest/getstarted.html#installation)
+- **Container Engine**: Docker or Singularity
+- **Java** (≥11): Required for Nextflow
 
-### Output
-Once the script has finished running, four directories should be created:
-* 1_raw_data
-  *  metadata.tsv  - tab separated file listing the accession no and the associated sequencing technology (before filtering for long reads)
-  *  longreads.tsv - tab separated file listing the accession no and the associated sequencing technology (after filtering for long reads)
-  *  wgs.fasta - a multi fasta file of genomes of the specified species (after filtering for long reads)
-* 2_filtered_data
-  *  trim.csv - a csv of the 16S rRNA blast results, only the copy number is appended to the accession number column
-  *  trim.fasta - a multi fasta file of the 16S rRNA copies
-* 3_output
-  *  between.csv - a csv of edit distances from the comparison of 16S copies between two genomes
-  *  within.csv - a csv of edit distances from the comparison of 16S copies within one genome
-  *  matrix.csv - a csv of the edit distance resultant matrix
-  *  output.txt - a text file of summary statistics from the LR_stats.R script
-  *  copies_per_genome.png - a plot produced from LR_stats.R showing the distribution of genomes with certain number of 16S rRNA copies
-  *  inter_intra_shared_unique.png - a plot produced from LR_stats.R showing the relative abundance of shared and unique 16S copies
-  *  boxplots.png - a boxplot of the distribution of edit distances based on type of variation
-  
-* 4_blast
-  *  16S.*** files making up the 16S database for BLAST
-  *  myresults.csv - a csv of the 16S rRNA blast results
+## Installation
 
-## LR_docker Process
-Docker is a free and open platform for developing, deploying, and running software. Docker isolates your applications from your infrastructure, allowing you to deliver software quickly. On this platform, you can manage your infrastructure the same way you manage your applications. Docker lets you package and run an application within a container, which is a loosely isolated environment.
+LongReads2 uses a streamlined installation process with Nextflow handling all dependencies automatically.
 
-This Docker image contains all required dependencies for this pipeline, as well as the pipeline script (main.py). 
-
-Before building the image, you must first download docker from https://www.docker.com for your appropriate opperating system. You will also need to create and connect a docker hub account in order for the dockerfile to pull the appropriate starting image. 
-Once docker is installed and you are logged in, you can continue to the next step -- cloning our repo
-
-1. To build the docker image, first clone the repository using either
-```
-git clone https://github.com/amyrold/LongReads
-```
-or download the repo using the web/app GUI.
-
-2. Before we can build our image, we need to pull the ubuntu image that it is based on. To do this, run:
-```
-sudo docker pull ubuntu
+1. **Install Nextflow**:
+```bash
+curl -s https://get.nextflow.io | bash
+sudo mv nextflow /usr/local/bin/
 ```
 
-3. Next, build the image using:
-```
-sudo docker build LongReads --tag longreads:latest
-```
-Here, we need to make sure that "LongReads" matches the name of the cloned repo. If you cloned with a different folder name than "LongReads" simply update the docker build command to reflect that. 
-
-
-4. Finally, create a Docker container with the longreads image. Here, [container name] is any user-given name.
-```
-sudo docker create -it --name [container name] longreads
-sudo docker start -i [container name]
-```
-or start the interactive session automatically using
-```
-sudo docker run -it --name [container name] longreads
+2. **Clone the repository**:
+```bash
+git clone https://github.com/[yourusername]/LongReads2
+cd LongReads2
 ```
 
-## LR_base Process
-If docker is undesirable, we have also provided a directory with just the main script, pip requirements, and .R visualization script.
-Here are the linux packages that are installed in the docker image. build-essential, ca-certs, and py-dev are all needed for biopython. They are likely installed already, but you can try installing them in case. The last two are required for the pipeline to run
-```
-apt-get install -y build-essential
-apt-get install -y ca-certificates
-apt-get install -y python3-dev
-apt-get install -y ncbi-blast+
-apt-get install -y ncbi-entrez-direct
-```
-Then, from within the LongReads/LR_base directory, run this command to download the required pip packages. 
-```
-pip install -r requirements.txt
-```
-Lastly, we need to install ncbi-datasets. For the script to run without changes, these commands must be run within the LongReads repo. 
-```
-curl -o datasets 'https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/v2/linux-amd64/datasets'
-curl -o dataformat 'https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/v2/linux-amd64/dataformat'
-chmod +x datasets dataformat
+3. **Test the installation**:
+```bash
+nextflow run main.nf --help
 ```
 
+That's it! Nextflow will automatically pull all required containers on first run.
 
-## Manual Installation
-To run this program manually, you will need to download the following packages before continuing to executing the program
-Here are the required dependancies to run main.py. They can all be installed via conda, pip, or apt-get. 
-### Dependencies
-- entrez-direct
-- ncbi-datasets
-- blast
-- pandas
-- numpy
-- biopython
+## Quick Start
+
+Run a test analysis with 10 *E. coli* genomes:
+
+```bash
+nextflow run main.nf \
+  --species 'Escherichia coli' \
+  --max_genomes 10 \
+  --outdir results
+```
+
+## Container Options
+
+LongReads2 supports multiple container engines:
+
+**Docker (default)**:
+```bash
+nextflow run main.nf --species 'Escherichia coli' -profile docker
+```
+
+**Singularity (for HPC environments)**:
+```bash
+nextflow run main.nf --species 'Escherichia coli' -profile singularity
+```
+
+## Usage
+
+### Basic Command Structure
+```bash
+nextflow run main.nf [options]
+```
+
+### Required Parameters
+- `--species`: Bacterial species name (quoted if contains spaces)
+- `--outdir`: Output directory path
+
+### Optional Parameters
+- `--max_genomes`: Maximum number of genomes to analyze (default: all available)
+- `--min_length`: Minimum sequence length filter (default: 1000)
+- `--blast_evalue`: BLAST e-value threshold (default: 1e-10)
+- `--cpus`: Number of CPUs per process (default: 4)
+- `--memory`: Memory allocation per process (default: '8.GB')
+
+### Examples
+
+**Basic analysis:**
+```bash
+nextflow run main.nf \
+  --species 'Escherichia coli' \
+  --outdir results
+```
+
+**Limited genome analysis with custom resources:**
+```bash
+nextflow run main.nf \
+  --species 'Salmonella enterica' \
+  --max_genomes 50 \
+  --outdir salmonella_analysis \
+  --cpus 8 \
+  --memory '16.GB'
+```
+
+**Production run with all available genomes:**
+```bash
+nextflow run main.nf \
+  --species 'Bacillus subtilis' \
+  --outdir bacillus_complete \
+  --cpus 16 \
+  --memory '32.GB'
+```
+
+### Execution Profiles
+
+**Local execution:**
+```bash
+nextflow run main.nf --species 'E. coli' -profile local
+```
+
+**HPC/SLURM execution:**
+```bash
+nextflow run main.nf --species 'E. coli' -profile slurm
+```
+
+**Cloud execution (AWS):**
+```bash
+nextflow run main.nf --species 'E. coli' -profile aws
+```
+
+## Pipeline Architecture
+
+LongReads2 is built as a modular Nextflow pipeline with the following processes:
+
+### Core Workflow Modules
+
+1. **`DOWNLOAD_METADATA`** - Fetch species metadata from NCBI
+2. **`FILTER_LONGREADS`** - Filter for long-read sequencing platforms
+3. **`DOWNLOAD_GENOMES`** - Download filtered genome assemblies
+4. **`EXTRACT_16S`** - BLAST-based 16S rRNA extraction
+5. **`CALCULATE_DISTANCES`** - Compute edit distances within/between genomes
+6. **`GENERATE_MATRIX`** - Create distance matrices
+7. **`VISUALIZE_RESULTS`** - Generate plots and summary statistics
+
+### Container Strategy
+Each process runs in isolated containers:
+- `longreads2/ncbi-tools`: NCBI datasets and BLAST
+- `longreads2/biopython`: Sequence processing
+- `longreads2/r-analysis`: Statistical analysis and visualization
+
+## Output Structure
+
+The pipeline generates four main directories:
+
+### 1_raw_data
+- `metadata.tsv` - Accession numbers and sequencing technology (pre-filtering)
+- `longreads.tsv` - Accession numbers and sequencing technology (post-filtering)
+- `wgs.fasta` - Multi-FASTA file of filtered genomes
+
+### 2_filtered_data
+- `trim.csv` - 16S rRNA BLAST results with copy numbers
+- `trim.fasta` - Multi-FASTA file of 16S rRNA sequences
+
+### 3_output
+- `between.csv` - Edit distances between genomes
+- `within.csv` - Edit distances within genomes
+- `matrix.csv` - Complete edit distance matrix
+- `output.txt` - Summary statistics
+- `copies_per_genome.png` - Distribution of 16S copy numbers
+- `inter_intra_shared_unique.png` - Shared vs. unique 16S sequences
+- `boxplots.png` - Edit distance distributions
+
+### 4_blast
+- `16S.***` - BLAST database files
+- `myresults.csv` - Raw BLAST results
+
+## Dependencies
+
+### Runtime Requirements
+- **Nextflow** ≥22.10.0
+- **Java** ≥11 (for Nextflow)
+- **Container Engine**: Docker or Singularity
+
+### Containerized Dependencies
+All bioinformatics tools are automatically managed through containers:
+
+**NCBI Tools Container:**
+- ncbi-datasets CLI
+- ncbi-dataformat CLI
+- BLAST+ suite
+
+**Sequence Analysis Container:**
+- Python 3.9+
+- BioPython
+- pandas, numpy
 - editdistance
 
-## Executing program
-Once the container is up and running (or appropriate packages have been installed locally), the user can call the following command from within /LongReads/LR_base or /LongReads/LR_docker (depending on installation method) to begin the pipeline. If unspecified, the '-n' flag will download all Long Read genomes of specified bacteria. For testing the code, we reccomend using <50 genomes. 
-```
-python3 main.py -s [Bacterial Species of Choice] -n [Number of Genomes to download]
-```
-Once the main script has finished, the output files will be located in the 3_output directory in either /LongReads/LR_base or /LongReads/LR_docker (depending on installation method). You will then need to run the LR_stats.R script to create the necessary figures. Do this by running:
-```
-Rscript LR_stats.R
-```
-If you used the docker environment, we currently need to copy the 3_output directory back to your local machine before running the above command. To do this, run the following command:
-```
-sudo docker cp [container name]:/LongReads/3_output LR_docker
-```
-## Output
-Once the script has finished running, four directories should be created:
-* 1_raw_data
-  *  metadata.tsv  - tab separated file listing the accession no and the associated sequencing technology (before filtering for long reads)
-  *  longreads.tsv - tab separated file listing the accession no and the associated sequencing technology (after filtering for long reads)
-  *  wgs.fasta - a multi fasta file of genomes of the specified species (after filtering for long reads)
-* 2_filtered_data
-  *  trim.csv - a csv of the 16S rRNA blast results, only the copy number is appended to the accession number column
-  *  trim.fasta - a multi fasta file of the 16S rRNA copies
-* 3_output
-  *  between.csv - a csv of edit distances from the comparison of 16S copies between two genomes
-  *  within.csv - a csv of edit distances from the comparison of 16S copies within one genome
-  *  matrix.csv - a csv of the edit distance resultant matrix
-  *  output.txt - a text file of summary statistics from the LR_stats.R script
-  *  copies_per_genome.png - a plot produced from LR_stats.R showing the distribution of genomes with certain number of 16S rRNA copies
-  *  inter_intra_shared_unique.png - a plot produced from LR_stats.R showing the relative abundance of shared and unique 16S copies
-  *  boxplots.png - a boxplot of the distribution of edit distances based on type of variation
-  
-* 4_blast
-  *  16S.*** files making up the 16S database for BLAST
-  *  myresults.csv - a csv of the 16S rRNA blast results
+**Visualization Container:**
+- R 4.2+
+- ggplot2, dplyr, readr
+- Custom visualization scripts
 
-## Authors
-Aaron Myrold, Niru Shanbhag, Asad Shahzad, Japani Doan
+## Configuration
+
+### Resource Configuration
+Customize resource allocation in `nextflow.config`:
+
+```groovy
+process {
+    withName: 'DOWNLOAD_GENOMES' {
+        cpus = 4
+        memory = '8.GB'
+        time = '2h'
+    }
+    withName: 'EXTRACT_16S' {
+        cpus = 8
+        memory = '16.GB'
+        time = '4h'
+    }
+}
+```
+
+### Container Registry
+By default, containers are pulled from Docker Hub. Configure custom registry:
+
+```groovy
+docker {
+    registry = 'your-registry.com'
+}
+```
+
+## Development
+
+### Adding New Modules
+1. Create module in `modules/local/`
+2. Define process in `modules/local/newmodule/main.nf`
+3. Add module to main workflow
+4. Update container definitions
+
+### Testing
+Run the test dataset:
+```bash
+nextflow run main.nf -profile test
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Container pull failures:**
+```bash
+# Pre-pull containers
+docker pull longreads2/ncbi-tools:latest
+docker pull longreads2/biopython:latest
+docker pull longreads2/r-analysis:latest
+```
+
+**Memory issues:**
+```bash
+# Increase memory allocation
+nextflow run main.nf --max_memory '64.GB'
+```
+
+**Resume failed runs:**
+```bash
+nextflow run main.nf -resume
+```
+
+## Contributing
+
+This is a personal portfolio project, but feedback and suggestions are welcome through issues.
+
+## Citation
+
+If you use this tool in your research, please cite the original collaborative work and acknowledge this extended version:
+
+```
+Original LongReads pipeline developed by Aaron Myrold, Niru Shanbhag, Asad Shahzad, and Japani Doan.
+Extended version available at: https://github.com/[yourusername]/LongReads-Extended
+```
+
+## License
+
+[Add your chosen license here]
+
+## Contact
+
+[Your contact information]
+
+---
+
+**Original Collaborative Team:** Aaron Myrold, Niru Shanbhag, Asad Shahzad, Japani Doan
