@@ -1,2 +1,75 @@
-.DS_Store
+# Nextflow runtime
+work/
+.nextflow/
+.nextflow.log*
+.nextflow.history
+*.trace.txt
+*.timeline.html
+*.report.html
+*.dag.*
+
+# Pipeline outputs
+results/
+test_results/
+output/
+*_output/
+*_results/
+
+# Downloaded/generated data
 data/
+genomes/
+*.fasta
+*.fna
+*.gbff
+*.faa
+*.fastq
+*.fastq.gz
+
+# Execution reports (generated in pipeline_info/)
+execution_trace.txt
+execution_timeline.html
+execution_report.html
+pipeline_dag.svg
+
+# Container images (if using Singularity)
+*.sif
+*.img
+singularity/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+
+# R
+.RData
+.Rhistory
+.Rproj.user
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp

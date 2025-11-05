@@ -6,7 +6,9 @@ This project is a complete architectural redesign of the original [LongReads](ht
 ## Description
 LongReads2 is a Nextflow-based bioinformatics pipeline that compares the variation of the 16S rRNA region within and between strains of a specified bacterial species. Based on a user-specified genome, LongReads2 downloads metadata and filters to genomes sequenced using Long Read technology (PacBio and Oxford Nanopore). It then analyzes and visualizes the intra-genomic and inter-genomic variation of the different 16S regions seen in each genome.
 
-## Major Architectural Improvements in LongReads2
+## Major Improvements in LongReads2
+
+### Architectural Improvements
 - **Nextflow Pipeline Management**: Complete migration from Python scripts to Nextflow for robust workflow orchestration
 - **Containerized Modules**: Each process runs in isolated Docker/Singularity containers for reproducibility
 - **Simplified Installation**: Single installation method eliminates complexity of multiple deployment options
@@ -14,6 +16,14 @@ LongReads2 is a Nextflow-based bioinformatics pipeline that compares the variati
 - **Enhanced Portability**: Runs consistently across different computing environments (local, HPC, cloud)
 - **Improved Error Handling**: Automatic retry logic and comprehensive logging
 - **Resource Management**: Dynamic resource allocation based on dataset size
+
+### Methodological Improvements
+- **Better 16S Detection**: Uses Barrnap (HMM-based) instead of single-reference BLAST for species-agnostic detection
+- **Multiple Sequence Alignment**: Implements MAFFT alignment before distance calculation (original used raw edit distances)
+- **Improved Distance Metrics**: Calculates alignment-based p-distances instead of raw edit distances
+- **Flexible Parameters**: Configurable length filters, detection methods, and resource allocation
+- **Enhanced Visualizations**: 6 publication-quality plots including dendrograms, heatmaps, and MDS plots
+- **Comprehensive Statistics**: Multiple statistical tests (Wilcoxon, t-test, effect sizes)
 
 ## Prerequisites
 
@@ -46,14 +56,26 @@ That's it! Nextflow will automatically pull all required containers on first run
 
 ## Quick Start
 
-Run a test analysis with 10 *E. coli* genomes:
+### First Run Test (5 genomes, ~30 minutes)
 
 ```bash
 nextflow run main.nf \
   --species 'Escherichia coli' \
-  --max_genomes 10 \
+  --max_genomes 5 \
+  --outdir test_results \
+  -profile docker
+```
+
+### Standard Analysis (20 genomes)
+
+```bash
+nextflow run main.nf \
+  --species 'Escherichia coli' \
+  --max_genomes 20 \
   --outdir results
 ```
+
+See [Quick Start Guide](docs/QUICKSTART.md) for detailed instructions.
 
 ## Container Options
 
@@ -247,6 +269,28 @@ Run the test dataset:
 nextflow run main.nf -profile test
 ```
 
+### Building Custom Containers
+See [containers/README.md](containers/README.md) for instructions on building containers locally.
+
+## Documentation
+
+### Learning Resources
+- **[Quick Start Guide](docs/QUICKSTART.md)** - Get started in 10 minutes
+- **[Workflow Documentation](docs/WORKFLOW.md)** - Detailed pipeline architecture and methodology
+- **[Container Guide](containers/README.md)** - Building and managing Docker/Singularity containers
+
+### Understanding the Pipeline
+The pipeline consists of 7 main processes:
+1. **DOWNLOAD_METADATA** - Fetch genome metadata from NCBI
+2. **FILTER_LONGREADS** - Filter for PacBio/Nanopore sequencing
+3. **DOWNLOAD_GENOMES** - Download genome assemblies
+4. **EXTRACT_16S** - Extract 16S rRNA using Barrnap or BLAST
+5. **ALIGN_SEQUENCES** - Multiple sequence alignment with MAFFT
+6. **CALCULATE_DISTANCES** - Compute pairwise distances
+7. **VISUALIZE_RESULTS** - Generate plots and statistical reports
+
+See [WORKFLOW.md](docs/WORKFLOW.md) for detailed process descriptions.
+
 ## Troubleshooting
 
 ### Common Issues
@@ -255,20 +299,31 @@ nextflow run main.nf -profile test
 ```bash
 # Pre-pull containers
 docker pull longreads2/ncbi-tools:latest
-docker pull longreads2/biopython:latest
-docker pull longreads2/r-analysis:latest
+docker pull longreads2/sequence-analysis:latest
+docker pull longreads2/visualization:latest
 ```
 
 **Memory issues:**
 ```bash
 # Increase memory allocation
-nextflow run main.nf --max_memory '64.GB'
+nextflow run main.nf --memory '32.GB'
 ```
 
 **Resume failed runs:**
 ```bash
-nextflow run main.nf -resume
+nextflow run main.nf -resume --species 'Your Species' --outdir results
 ```
+
+**No 16S sequences found:**
+```bash
+# Try BLAST mode instead of Barrnap
+nextflow run main.nf --species 'Your Species' --use_barrnap false
+
+# Or relax length filters
+nextflow run main.nf --species 'Your Species' --min_16s_length 1200
+```
+
+For more troubleshooting tips, see the [Quick Start Guide](docs/QUICKSTART.md).
 
 ## Contributing
 
